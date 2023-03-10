@@ -1,0 +1,53 @@
+version: '2.4'
+
+services:
+  artifactory:
+    image: docker.bintray.io/jfrog/artifactory-jcr:7.39.4
+    container_name: artifactory
+    ports:
+      - 8081:8081
+      - 8082:8082
+    volumes:
+      - ./artifactory/:/artifactory_extra_conf/
+    restart: always
+    healthcheck:
+      test:  ["CMD", "curl", "-f", "http://192.168.44.44:8082/artifactory/api/system/ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  jenkins:
+    depends_on:
+      artifactory:
+        condition: service_healthy
+    build: jenkins_controller
+    container_name: jenkins
+    ports:
+      - 8880:8080
+      - 50000:50000
+    volumes:
+      - ./jenkins_controller/casc.yml/:/usr/share/jenkins/ref/casc.yml
+    restart: always
+  
+  jenkins_agent:
+    container_name: jenkins_agent
+    depends_on:
+      - jenkins
+    build: jenkins_agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "2222:22"
+    environment:
+      - JENKINS_AGENT_SSH_PUBKEY=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDj161RMPUnvM1g3ebztIhytvfub0gNRETZ5S/rthVflddeHBFhDcZa81fM3yVo6ITqyWknFMWmuEdxlP2HP0hiW8XjhHVUoPA2HUyFlBEtu5d2GAp74z1JELAAyB/NxfbJEzkKwatihR9QErmC1zy0DBN7+FI7lBkx9b0oM+zsIV1b2NaEqqz0m8bDKYxKHsYBi47PQip+ftmzaNA9zg1ySTajnHc5Nv54vVJemdRKDqcahBxCuNFlgKxIKnEvHhwwp2m2NtrPbHOZsFH/D2KQqDudwWU4BcFE6eIM/ypVgud9qbgYar7Vx3322elAayhVACjN+VlOP/V0vNzWWMOR/LSnuC7usKn0I8cING4fqvQlO4Yo23ShNepqLx4x3qxZ2qd9Y6gWDUw/UQsu3mwo7nH7fpjwUP6xDaFeO+0UHD4jLD6GdN6k1cUfcHz8bxglhQrMDWppuD8rRV7aBNvSCtMRmZqhvzigVmtEdVowoSETjplWiOr5lpJBUYLRAg+pTROFses33LCgSMLQ9rLOuqKi/AhRekc2je7yaJx4A8RjhI84mF37HToV3kBO1Cj2XuQY5XZRKS6XcqzzFcjM3IykWgcbj0zrh5bJ9hvUuZHV0q3yJMEPFqHQhA41JXoLJWF56K19eoN87UZ1ZNLVagdiT8YeRzZQvkhNjKCLBQ== panda@vagrant
+    restart: always
+
+  sonarqube:
+    depends_on:
+      - jenkins
+    image: sonarqube:9.2.4-community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    restart: always
