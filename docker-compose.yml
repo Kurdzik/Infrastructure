@@ -5,17 +5,17 @@ services:
     image: docker.bintray.io/jfrog/artifactory-jcr:7.39.4
     container_name: artifactory
     ports:
-      - 8081:8081
-      - 8082:8082
+      - "8081:8081"
+      - "8082:8082"
     volumes:
       - ./artifactory/:/artifactory_extra_conf/
     restart: always
     healthcheck:
-      test:  ["CMD", "curl", "-f", "http://192.168.44.44:8082/artifactory/api/system/ping"]
-      interval: 5s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+        test: ["CMD", "curl", "-f", "http://localhost:8082/artifactory/api/system/ping"]
+        start_period: 30s
+        interval: 5s
+        timeout: 10s
+        retries: 30
 
   jenkins:
     depends_on:
@@ -24,10 +24,11 @@ services:
     build: jenkins_controller
     container_name: jenkins
     ports:
-      - 8880:8080
-      - 50000:50000
+      - "50000:50000"
+      - "8880:8080"
     volumes:
-      - ./jenkins_controller/casc.yml/:/usr/share/jenkins/ref/casc.yml
+      - ./jenkins_controller/casc.yml:/usr/share/jenkins/ref/casc.yml
+      - ./jenkins_controller/jobs:/usr/share/jenkins/ref/jobs
     restart: always
   
   jenkins_agent:
